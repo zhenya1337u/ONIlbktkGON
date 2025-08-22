@@ -19,3 +19,5 @@ cryptography>=3.4.0
 
 # Для сжатия (опционально)
 #zlib
+
+gunicorn[eventlet]
