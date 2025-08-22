@@ -21,3 +21,4 @@ cryptography>=3.4.0
 #zlib
 
 gunicorn[eventlet]
+flask
