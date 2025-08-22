@@ -18,4 +18,4 @@ pyarmor>=7.7.0
 cryptography>=3.4.0
 
 # Для сжатия (опционально)
-zlib
+#zlib
