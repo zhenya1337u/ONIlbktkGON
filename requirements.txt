@@ -29,4 +29,4 @@ pyarmor>=7.7.0
 
 # Для запуска на сервере
 gunicorn[eventlet]==21.2.0
-eventlet==0.33.3
+setuptools
