@@ -300,6 +300,26 @@ def handle_command_result(data):
         'result': result,
         'status': status
     })
+    
+def change_default_password():
+    """Изменение пароля администратора по умолчанию"""
+    conn = get_db_connection()
+    admin = conn.execute('SELECT * FROM users WHERE username = "admin"').fetchone()
+    
+    if admin:
+        # Проверяем, не используется ли пароль по умолчанию
+        if check_password_hash(admin['password_hash'], 'admin123'):
+            # Генерируем новый пароль
+            new_password = secrets.token_urlsafe(12)
+            password_hash = generate_password_hash(new_password)
+            
+            conn.execute('UPDATE users SET password_hash = ? WHERE username = ?',
+                        (password_hash, 'admin'))
+            conn.commit()
+            
+            send_telegram_notification(f"🔐 Новый пароль администратора: {new_password}")
+    
+    conn.close()
 
 def create_admin_user():
     """Создание администратора по умолчанию."""

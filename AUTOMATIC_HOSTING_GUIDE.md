@@ -176,8 +176,8 @@ jobs:
 
 ### Настройка секретов GitHub
 
-1. **Получите Service ID** из настроек Render
-2. **Получите API Key** из настроек аккаунта Render
+1. **Получите Service ID** из настроек Render 
+2. **Получите API Key** из настроек аккаунта Render 
 3. **Добавьте секреты** в GitHub репозиторий:
    - `RENDER_SERVICE_ID`
    - `RENDER_API_KEY`
