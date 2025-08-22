@@ -30,6 +30,20 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 # База данных для хранения информации о устройствах
 DB_PATH = 'devices.db'
 
+def create_admin_user():
+    """Создание администратора по умолчанию."""
+    conn = get_db_connection()
+    admin = conn.execute('SELECT * FROM users WHERE username = "admin"').fetchone()
+    
+    if not admin:
+        password_hash = generate_password_hash('admin123')
+        conn.execute('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
+                    ('admin', password_hash, 'admin'))
+        conn.commit()
+        logger.info("Admin user created: admin/admin123")
+    
+    conn.close()
+
 def init_database():
     """Инициализация базы данных."""
     conn = sqlite3.connect(DB_PATH)
@@ -345,22 +359,7 @@ def change_default_password():
     
     conn.close()
 
-def create_admin_user():
-    """Создание администратора по умолчанию."""
-    conn = get_db_connection()
-    admin = conn.execute('SELECT * FROM users WHERE username = "admin"').fetchone()
-    
-    if not admin:
-        password_hash = generate_password_hash('admin123')
-        conn.execute('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
-                    ('admin', password_hash, 'admin'))
-        conn.commit()
-        logger.info("Admin user created: admin/admin123")
-    
-    conn.close()
-
 if __name__ == '__main__':
-    create_admin_user()
     logger.info("Starting web dashboard...")
     logger.info("Admin panel: http://localhost:5000")
     logger.info("Default credentials: admin/admin123")
