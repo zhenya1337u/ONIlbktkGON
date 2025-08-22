@@ -86,6 +86,9 @@ def init_database():
     
     conn.commit()
     conn.close()
+    
+    # Создаем администратора по умолчанию
+    create_admin_user()
 
 def get_db_connection():
     """Получение соединения с базой данных."""
@@ -129,6 +132,25 @@ def logout():
     """Выход из системы."""
     session.clear()
     return redirect(url_for('login'))
+
+@app.route('/reset_admin', methods=['POST'])
+def reset_admin():
+    """Сброс пароля администратора."""
+    conn = get_db_connection()
+    admin = conn.execute('SELECT * FROM users WHERE username = "admin"').fetchone()
+    
+    if admin:
+        # Создаем новый пароль
+        new_password = 'admin123'
+        password_hash = generate_password_hash(new_password)
+        
+        conn.execute('UPDATE users SET password_hash = ? WHERE username = ?',
+                    (password_hash, 'admin'))
+        conn.commit()
+        logger.info("Admin password reset to: admin123")
+    
+    conn.close()
+    return jsonify({'success': True, 'message': 'Пароль сброшен на admin123'})
 
 @app.route('/api/devices')
 def get_devices():
