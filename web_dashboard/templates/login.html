@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход - Backdoor Dashboard</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .login-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            max-width: 400px;
+            width: 100%;
+        }
+        
+        .login-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+        
+        .login-body {
+            padding: 2rem;
+        }
+        
+        .form-control {
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .btn-login {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 0.75rem 2rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0.5rem 1rem rgba(102, 126, 234, 0.4);
+        }
+        
+        .input-group-text {
+            background: transparent;
+            border: 2px solid #e9ecef;
+            border-right: none;
+            border-radius: 10px 0 0 10px;
+        }
+        
+        .input-group .form-control {
+            border-left: none;
+            border-radius: 0 10px 10px 0;
+        }
+        
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+        
+        .brand-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .login-footer {
+            text-align: center;
+            padding: 1rem;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="login-header">
+            <div class="brand-icon">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            <h3>Backdoor Dashboard</h3>
+            <p class="mb-0">Панель управления устройствами</p>
+        </div>
+        
+        <div class="login-body">
+            {% if error %}
+            <div class="alert alert-danger" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                {{ error }}
+            </div>
+            {% endif %}
+            
+            <form method="POST">
+                <div class="mb-3">
+                    <label for="username" class="form-label">
+                        <i class="fas fa-user me-2"></i>Имя пользователя
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-user"></i>
+                        </span>
+                        <input type="text" class="form-control" id="username" name="username" 
+                               placeholder="Введите имя пользователя" required>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="password" class="form-label">
+                        <i class="fas fa-lock me-2"></i>Пароль
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text">
+                            <i class="fas fa-lock"></i>
+                        </span>
+                        <input type="password" class="form-control" id="password" name="password" 
+                               placeholder="Введите пароль" required>
+                    </div>
+                </div>
+                
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-login btn-primary">
+                        <i class="fas fa-sign-in-alt me-2"></i>
+                        Войти
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <div class="login-footer">
+            <p class="mb-1">
+                <strong>Демо доступ:</strong><br>
+                Логин: <code>admin</code><br>
+                Пароль: <code>admin123</code>
+            </p>
+            <small>
+                <i class="fas fa-info-circle me-1"></i>
+                Используйте только для тестирования
+            </small>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Auto-focus on username field
+        document.getElementById('username').focus();
+        
+        // Form validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            
+            if (!username || !password) {
+                e.preventDefault();
+                alert('Пожалуйста, заполните все поля');
+                return false;
+            }
+        });
+        
+        // Show/hide password
+        document.getElementById('password').addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') {
+                document.querySelector('form').submit();
+            }
+        });
+    </script>
+</body>
+</html>

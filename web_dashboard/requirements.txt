@@ -1,0 +1,29 @@
+# Веб-фреймворк и расширения
+Flask==2.3.3
+Flask-SocketIO==5.3.6
+python-socketio==5.8.0
+python-engineio==4.7.1
+Werkzeug==2.3.7
+
+# HTTP запросы
+requests==2.31.0
+
+# Системная информация
+psutil==5.9.5
+
+# Работа с изображениями
+Pillow==10.0.1
+opencv-python==4.8.1.78
+
+# Шифрование и безопасность
+cryptography==41.0.4
+
+# База данных
+sqlite3
+
+# Дополнительные утилиты
+python-dotenv==1.0.0
+gunicorn==21.2.0
+
+# Для бесплатного хостинга
+eventlet==0.33.3

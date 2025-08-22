@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Backdoor Dashboard{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Socket.IO -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            margin: 0.25rem 0;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: white;
+            background: rgba(255,255,255,0.1);
+            transform: translateX(5px);
+        }
+        
+        .main-content {
+            background: #f8f9fa;
+            min-height: 100vh;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        
+        .status-online {
+            color: #28a745;
+        }
+        
+        .status-offline {
+            color: #dc3545;
+        }
+        
+        .status-warning {
+            color: #ffc107;
+        }
+        
+        .device-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .device-card:hover {
+            transform: scale(1.02);
+        }
+        
+        .command-input {
+            border-radius: 20px;
+            border: 2px solid #e9ecef;
+            padding: 0.75rem 1.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .command-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 20px;
+            padding: 0.75rem 1.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0.5rem 1rem rgba(102, 126, 234, 0.4);
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .stats-card .card-body {
+            padding: 2rem;
+        }
+        
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+        
+        .command-history {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .command-item {
+            border-left: 4px solid #667eea;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            background: white;
+            border-radius: 0.5rem;
+        }
+        
+        .command-success {
+            border-left-color: #28a745;
+        }
+        
+        .command-error {
+            border-left-color: #dc3545;
+        }
+        
+        .command-pending {
+            border-left-color: #ffc107;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <div class="text-center mb-4">
+                        <h4 class="text-white">
+                            <i class="fas fa-shield-alt"></i>
+                            Backdoor Dashboard
+                        </h4>
+                        <small class="text-white-50">Управление устройствами</small>
+                    </div>
+                    
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#" data-page="dashboard">
+                                <i class="fas fa-tachometer-alt me-2"></i>
+                                Панель управления
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-page="devices">
+                                <i class="fas fa-desktop me-2"></i>
+                                Устройства
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-page="commands">
+                                <i class="fas fa-terminal me-2"></i>
+                                Команды
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-page="analytics">
+                                <i class="fas fa-chart-bar me-2"></i>
+                                Аналитика
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-page="settings">
+                                <i class="fas fa-cog me-2"></i>
+                                Настройки
+                            </a>
+                        </li>
+                    </ul>
+                    
+                    <hr class="text-white-50">
+                    
+                    <div class="text-center">
+                        <small class="text-white-50">
+                            Пользователь: <span id="current-user">{{ session.username }}</span>
+                        </small>
+                        <br>
+                        <a href="/logout" class="btn btn-outline-light btn-sm mt-2">
+                            <i class="fas fa-sign-out-alt"></i> Выход
+                        </a>
+                    </div>
+                </div>
+            </nav>
+            
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2" id="page-title">Панель управления</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="refresh-btn">
+                                <i class="fas fa-sync-alt"></i> Обновить
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+    
+    <!-- Toast notifications -->
+    <div class="toast-container"></div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        // Socket.IO connection
+        const socket = io();
+        
+        // Global variables
+        let currentPage = 'dashboard';
+        let devices = [];
+        let analytics = {};
+        
+        // Utility functions
+        function showToast(message, type = 'info') {
+            const toastContainer = document.querySelector('.toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast show bg-${type} text-white`;
+            toast.innerHTML = `
+                <div class="toast-body">
+                    <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                    ${message}
+                </div>
+            `;
+            toastContainer.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+        
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleString('ru-RU');
+        }
+        
+        function getStatusBadge(status) {
+            const statusClasses = {
+                'online': 'success',
+                'offline': 'danger',
+                'warning': 'warning'
+            };
+            return `<span class="badge bg-${statusClasses[status] || 'secondary'}">${status}</span>`;
+        }
+        
+        // Navigation
+        document.querySelectorAll('.nav-link[data-page]').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = e.target.closest('.nav-link').dataset.page;
+                loadPage(page);
+            });
+        });
+        
+        function loadPage(page) {
+            currentPage = page;
+            
+            // Update navigation
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            document.querySelector(`[data-page="${page}"]`).classList.add('active');
+            
+            // Load page content
+            switch(page) {
+                case 'dashboard':
+                    loadDashboard();
+                    break;
+                case 'devices':
+                    loadDevices();
+                    break;
+                case 'commands':
+                    loadCommands();
+                    break;
+                case 'analytics':
+                    loadAnalytics();
+                    break;
+                case 'settings':
+                    loadSettings();
+                    break;
+            }
+        }
+        
+        // Socket.IO event handlers
+        socket.on('connect', () => {
+            console.log('Connected to server');
+            showToast('Подключено к серверу', 'success');
+        });
+        
+        socket.on('disconnect', () => {
+            console.log('Disconnected from server');
+            showToast('Отключено от сервера', 'error');
+        });
+        
+        socket.on('device_update', (data) => {
+            console.log('Device update:', data);
+            if (currentPage === 'dashboard' || currentPage === 'devices') {
+                loadDevices();
+            }
+        });
+        
+        socket.on('command_completed', (data) => {
+            console.log('Command completed:', data);
+            showToast(`Команда выполнена: ${data.status}`, data.status === 'success' ? 'success' : 'error');
+            if (currentPage === 'commands') {
+                loadCommands();
+            }
+        });
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPage('dashboard');
+            
+            // Refresh button
+            document.getElementById('refresh-btn').addEventListener('click', () => {
+                loadPage(currentPage);
+            });
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>
