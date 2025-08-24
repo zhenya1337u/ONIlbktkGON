@@ -209,6 +209,12 @@
                                 Настройки
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-page="credentials">
+                                <i class="fas fa-key me-2"></i>
+                                Учетные данные
+                            </a>
+                        </li>
                     </ul>
                     
                     <hr class="text-white-50">
@@ -325,6 +331,9 @@
                 case 'settings':
                     loadSettings();
                     break;
+                case 'credentials':
+                    loadCredentials();
+                    break;
             }
         }
         
@@ -363,6 +372,27 @@
                 loadPage(currentPage);
             });
         });
+        
+        // Функция загрузки страницы учетных данных
+        function loadCredentials() {
+            document.getElementById('page-title').textContent = 'Учетные данные';
+            
+            // Загружаем содержимое страницы
+            fetch('/templates/credentials.html')
+                .then(response => response.text())
+                .then(html => {
+                    document.querySelector('.main-content').innerHTML = html;
+                    
+                    // Инициализируем функциональность страницы
+                    if (typeof initCredentialsPage === 'function') {
+                        initCredentialsPage();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading credentials page:', error);
+                    showToast('Ошибка загрузки страницы', 'error');
+                });
+        }
     </script>
     
     {% block scripts %}{% endblock %}

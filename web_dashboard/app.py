@@ -18,6 +18,13 @@ from datetime import datetime
 import requests
 from werkzeug.security import generate_password_hash, check_password_hash
 import secrets
+import sys
+import os
+
+# Добавляем путь к родительской директории для импорта модулей
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from password_manager import password_manager, init_password_manager, cleanup_password_manager
 
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
@@ -149,6 +156,24 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
+@app.route('/templates/<template_name>')
+def get_template(template_name):
+    """Получение содержимого шаблона для AJAX загрузки."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        template_path = os.path.join('templates', template_name)
+        if os.path.exists(template_path):
+            with open(template_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            return content
+        else:
+            return jsonify({'error': 'Template not found'}), 404
+    except Exception as e:
+        logger.error(f"Error loading template {template_name}: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
 @app.route('/reset_admin', methods=['POST'])
 def reset_admin():
     """Сброс пароля администратора."""
@@ -167,6 +192,137 @@ def reset_admin():
     
     conn.close()
     return jsonify({'success': True, 'message': 'Пароль сброшен на admin123'})
+
+@app.route('/api/set_credentials', methods=['POST'])
+def set_credentials():
+    """Установка пользовательских учетных данных."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    
+    if not username or not password:
+        return jsonify({'error': 'Необходимо указать имя пользователя и пароль'}), 400
+    
+    if len(password) < 6:
+        return jsonify({'error': 'Пароль должен содержать минимум 6 символов'}), 400
+    
+    success = password_manager.set_custom_credentials(username, password)
+    
+    if success:
+        return jsonify({
+            'success': True, 
+            'message': f'Учетные данные для пользователя {username} установлены'
+        })
+    else:
+        return jsonify({'error': 'Ошибка при установке учетных данных'}), 500
+
+@app.route('/api/password_status', methods=['GET'])
+def get_password_status():
+    """Получение статуса автоматического обновления паролей."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    return jsonify({
+        'auto_update_enabled': password_manager.is_running,
+        'update_interval': password_manager.password_update_interval,
+        'password_length': password_manager.password_length
+    })
+
+@app.route('/api/toggle_auto_update', methods=['POST'])
+def toggle_auto_update():
+    """Включение/выключение автоматического обновления паролей."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    data = request.get_json()
+    enabled = data.get('enabled', False)
+    
+    if enabled:
+        password_manager.start_auto_update()
+        message = "Автоматическое обновление паролей включено"
+    else:
+        password_manager.stop_auto_update()
+        message = "Автоматическое обновление паролей отключено"
+    
+    return jsonify({
+        'success': True,
+        'message': message,
+        'auto_update_enabled': password_manager.is_running
+    })
+
+@app.route('/api/update_password_now', methods=['POST'])
+def update_password_now():
+    """Принудительное обновление пароля администратора."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        password_manager.update_admin_password()
+        return jsonify({
+            'success': True,
+            'message': 'Пароль администратора обновлен и отправлен через отдельного бота'
+        })
+    except Exception as e:
+        logger.error(f"Ошибка при принудительном обновлении пароля: {e}")
+        return jsonify({'error': 'Ошибка при обновлении пароля'}), 500
+
+@app.route('/api/password_bot_status', methods=['GET'])
+def get_password_bot_status():
+    """Получение статуса отдельного бота для паролей."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        from password_telegram import get_password_bot_status
+        status = get_password_bot_status()
+        return jsonify(status)
+    except Exception as e:
+        logger.error(f"Ошибка при получении статуса бота паролей: {e}")
+        return jsonify({'error': 'Ошибка при получении статуса'}), 500
+
+@app.route('/api/test_password_bot', methods=['POST'])
+def test_password_bot():
+    """Тестирование подключения к отдельному боту для паролей."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    try:
+        from password_telegram import test_password_bot_connection, send_password_to_telegram
+        
+        # Тестируем подключение
+        connection_ok = test_password_bot_connection()
+        
+        if connection_ok:
+            # Отправляем тестовое сообщение
+            test_message = f"""
+🧪 **ТЕСТОВОЕ СООБЩЕНИЕ**
+
+📅 Время: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+✅ Подключение к отдельному боту для паролей успешно
+🔒 Это тестовое сообщение отправлено через защищенного бота
+            """
+            
+            result = send_password_to_telegram(test_message)
+            success = result.get("ok", False)
+            
+            return jsonify({
+                'success': success,
+                'message': 'Тестовое сообщение отправлено через отдельного бота' if success else 'Ошибка отправки тестового сообщения',
+                'connection_ok': connection_ok
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Ошибка подключения к отдельному боту для паролей',
+                'connection_ok': False
+            })
+            
+    except Exception as e:
+        logger.error(f"Ошибка при тестировании бота паролей: {e}")
+        return jsonify({'error': 'Ошибка при тестировании'}), 500
 
 @app.route('/api/devices')
 def get_devices():
@@ -364,5 +520,16 @@ if __name__ == '__main__':
     logger.info("Admin panel: http://localhost:5000")
     logger.info("Default credentials: admin/admin123")
     
-    # Запуск в режиме разработки
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    try:
+        # Инициализируем менеджер паролей
+        init_password_manager()
+        logger.info("Password manager initialized")
+        
+        # Запуск в режиме разработки
+        socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    except KeyboardInterrupt:
+        logger.info("Shutting down...")
+        cleanup_password_manager()
+    except Exception as e:
+        logger.error(f"Error during startup: {e}")
+        cleanup_password_manager()
